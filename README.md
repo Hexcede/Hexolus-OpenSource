@@ -11,4 +11,4 @@ The game itself will not ever be open source, however, many of the tools I devel
 
 # Anticheat
 Hexolus' Anticheat was developed based on one of my older devforum articles: https://devforum.roblox.com/t/how-you-should-secure-your-game-a-beginner-guide-for-secure-networking-and-developing-anticheats/351775
-The anticheat has been fine tuned to prevent most movement exploits from the server alone, with no help from any client-sided code. This makes the anticheat virtually impossible to defeat.
+The anticheat has been fine tuned to prevent most movement exploits from the server alone, with no help from any client-sided code. This makes the anticheat virtually impossible to defeat in many aspects.
