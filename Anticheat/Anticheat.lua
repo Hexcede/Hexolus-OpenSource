@@ -1,11 +1,12 @@
 --[[
 	[Hexolus Anticheat]
 	 Author: Hexcede
-	 Updated: 1/13/2020
-	 Built for game version: 1.6.1-TA
+	 Updated: 1/14/2020
+	 Built for game version: 1.6.2-TA
 	 Description:
 	   Server-only movement checking & prevention of bad Roblox behaviours
 	 Todo:
+	   Use Velocity change event to update the player's maximum speed until they slow down
 	   Improve flight detection prevention method (The current ground placement is extremely undesirable)
 	 Todo (Non movement):
 	   Prevent dropping of non CanBeDropped tools
@@ -119,6 +120,14 @@ function Anticheat:TestPlayers(PlayerManager, delta)
 					end)
 					
 					trackHumanoid()
+					
+					-- An enormous thanks to grilme99 for letting me know that CFrame changed events fire when CFrame is set on the server					
+					local rootPart = character.PrimaryPart or character:WaitForChild("HumanoidRootPart")
+					rootPart:GetPropertyChangedSignal("CFrame"):Connect(function()
+						local cframe = rootPart.CFrame
+						
+						physicsData.InitialCFrame = cframe
+					end)
 				end))
 			end
 
