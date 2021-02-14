@@ -2,17 +2,19 @@
 	[Hexolus Anticheat]
 	 Author: Hexcede
 	 Updated: 2/14/2020
-	 Built for game version: 1.7.1-TA
+	  Built for game version: 1.7.1-TA
 	 Description:
 	   Server-only movement checking & prevention of bad Roblox behaviours
+	 Extra features:
+	   Listens for server-sided teleportation (.CFrame)
+	   Listens for server-sided movement updates (.Velocity/.LinearAssemblyVelocity)
 	 Todo:
-	   Use Velocity change event to update the player's maximum speed until they slow down
-	   Improve flight detection prevention method (The current ground placement is extremely undesirable)
+	   Limited BodyMover support
+	    - BodyVelocity
+		- BodyForce
+	   Redo flight detection prevention method (The current ground placement is extremely undesirable)
 	 Todo (Non movement):
-	   Prevent dropping of non CanBeDropped tools
-	   Prevent deletion of Humanoid object by the client
 	   Prevent undesirable Humanoid state behaviour
-	   Prevent multi-tooling
 	   Prevent usage of body parts as nuclear warheads against other players (Make all non-connected character body parts server owned)
 --]]
 
@@ -39,28 +41,39 @@ local Anticheat = {}
 local DEBUG
 
 Anticheat.ChecksEnabled = {
-	Teleportation = true,
-	Speed = true,
-	Noclip = true,
-	VerticalSpeeds = true,
+	-- Basic checks
+	Teleportation = true, -- Changing your position, or otherwise moving faster than humanly possible in a single instant
+	Speed = true, -- Zoom
+	Noclip = true, -- Going ghost
+	VerticalSpeed = true, -- Zooming up or down (Speed and vertical speed are both done as separate checks)
 
+	-- Non movement related checks
 	MultiTool = true, -- Equipping multiple tools at once
 	InvalidDrop = true, -- Dropping tools that don't have CanBeDropped
-	ToolDeletion = true, -- Stop the client from deleting tools (Check compatability with your game if you temporarily parent equipped tools to nil!)
-	HumanoidDeleteGodMode = true, -- God mod by deleting their Humanoid
+	ToolDeletion = true, -- Stop the client from deleting tools (Incompatible with any usage of tool.Parent = nil, use :Destroy() instead)
+	FEGodMode = true, -- God mod achieved by deleting their Humanoid on the server and creating a fake one on the client
 
-	-- Currently fairly unstable, enabled in Hexolus' test place, but should be used cautiously
-	-- Most applicable to parkour games, do not apply to PVP games as it will often mess up your players
-	Flight = false--LocalLinker and true or false
+	-- Upcoming checks
+	--ServerOwnedLimbs = true, -- Make sure limbs are server owned when detached from the player
+	--HumanoidStateValidation = true, -- Validate humanoid states and make sure things such as Swimming, Climbing, etc happen when they make sense to
+
+
+	
+	-- Unstable - DO NOT USE IN PRODUCTION
+	Flight = false
 }
 
 Anticheat.Thresholds = {
 	Acceleration = 1, -- Maximum vertical acceleration above expected
 	Speed = 1, -- Maximum speed above expected
+	SpeedPercent = 5,
 	VerticalSpeed = 1.5, -- Maximum vertical speed above expected
+	VerticalSpeedPercent = 20,
 	VerticalSpeedCap = workspace.Gravity, -- Maximum vertical speed
-	Teleportation = 2.5, -- Maximum teleport distance
-	VerticalTeleportation = 2, -- Maximum teleport distance (vertical)
+	Teleportation = 1.2, -- Maximum teleport distance
+	TeleportationPercent = 25,
+	VerticalTeleportation = 2.2, -- Maximum teleport distance (vertical)
+	VerticalTeleportationPercent = 40,
 	GroundThreshold = 1, -- Distance from the ground to be considered on the ground
 	FlightTimeThreshold = 1
 }
@@ -240,6 +253,18 @@ function Anticheat:TestPlayers(PlayerManager, delta)
 
 						physicsData.InitialCFrame = cframe
 					end)
+
+					-- Listen for scripted Velocity changes on the server
+					rootPart:GetPropertyChangedSignal("Velocity"):Connect(function()
+						local velocity = rootPart:GetVelocityAtPosition(rootPart.Position)
+
+						physicsData.VelocityMemory = velocity
+					end)
+					rootPart:GetPropertyChangedSignal("AssemblyLinearVelocity"):Connect(function()
+						local AssemblyLinearVelocity = rootPart.AssemblyLinearVelocity
+
+						physicsData.VelocityMemory = AssemblyLinearVelocity
+					end)
 				end))
 			end
 
@@ -257,8 +282,8 @@ function Anticheat:TestPlayers(PlayerManager, delta)
 							-- Don't check them if they're server-owned
 							if root:GetNetworkOwner() ~= player then
 								physicsData.InitialCFrame = root.CFrame
-								physicsData.InitialVelocity = root.Velocity
-								physicsData.Acceleration = root.Velocity - (physicsData.InitialVelocity or Vector3.new())
+								physicsData.InitialVelocity = root.AssemblyLinearVelocity
+								physicsData.Acceleration = root.AssemblyLinearVelocity - (physicsData.InitialVelocity or Vector3.new())
 								return
 							end
 
@@ -276,14 +301,31 @@ function Anticheat:TestPlayers(PlayerManager, delta)
 								return params
 							end)()
 
-							-- Get their previous velocity
-							local velocity = physicsData.InitialVelocity or root.Velocity
+							-- Get their previous AssemblyLinearVelocity
+							local AssemblyLinearVelocity = physicsData.InitialVelocity or root.AssemblyLinearVelocity
 							-- Get only the horizontal component
-							local horizontalVelocity = velocity * Vector3.new(1, 0, 1)
+							local horizontalVelocity = AssemblyLinearVelocity * Vector3.new(1, 0, 1)
 							-- Get only the vertical component
-							local verticalSpeed = velocity.Y
+							local verticalSpeed = AssemblyLinearVelocity.Y
 
-							local updatedVelocity = velocity--horizontalVelocity + Vector3.new(0, verticalSpeed, 0)
+							-- Get memorized AssemblyLinearVelocity
+							local velocityMemory = physicsData.VelocityMemory or Vector3.new()
+							-- Get only the horizontal component
+							local memHorizontal = velocityMemory * Vector3.new(1, 0, 1)
+							-- Get only the vertical component
+							local memVertical = velocityMemory.Y
+
+							local function sign(num)
+								local sign = math.sign(num)
+
+								if sign == 0 then
+									sign = 1
+								end
+
+								return sign
+							end
+							local updatedVelocity = Vector3.new(sign(velocityMemory.X) * math.max(math.abs(AssemblyLinearVelocity.X), math.abs(velocityMemory.X)), sign(velocityMemory.Y) * math.max(math.abs(AssemblyLinearVelocity.Y), math.abs(velocityMemory.Y)), sign(velocityMemory.Z) * math.max(math.abs(AssemblyLinearVelocity.Z), math.abs(velocityMemory.Z)))--AssemblyLinearVelocity--horizontalVelocity + Vector3.new(0, verticalSpeed, 0)
+							velocityMemory = updatedVelocity
 
 							--local updatedVelocity = horizontalVelocity + Vector3.new(0, verticalSpeed, 0)
 
@@ -298,18 +340,18 @@ function Anticheat:TestPlayers(PlayerManager, delta)
 							-- If they had a previous speed
 							if physicsData.InitialVelocity then
 								--local expectedDiff = updatedVelocity * (localDelta * 2)
-								local expectedDiff = updatedVelocity * (localDelta * 2)
-
-								-- Check if they moved faster than expected
-								local magFail = realDiff.Magnitude > (expectedDiff.Magnitude + self.Thresholds.Teleportation)
+								local expectedDiff = updatedVelocity * (localDelta + 1/workspace:GetRealPhysicsFPS())--(localDelta * 2)
 
 								-- General teleport check
 								if Anticheat.ChecksEnabled.Teleportation then
+									-- Check if they moved faster than expected
+									local magFail = realDiff.Magnitude > (expectedDiff.Magnitude + self.Thresholds.Teleportation + self.Thresholds.TeleportationPercent/100 * expectedDiff.Magnitude)
+
 									if magFail then
-										table.insert(reason_DEBUG, "Teleport ("..realDiff.Magnitude.." studs, expected "..expectedDiff.Magnitude..")\n  Velocity: "..tostring(updatedVelocity).."\n  Delta: "..tostring(localDelta).."\n  IPos: "..tostring(initialPos).."\n  Pos: "..tostring(root.CFrame.p))
+										table.insert(reason_DEBUG, "Teleport ("..realDiff.Magnitude.." studs, expected "..expectedDiff.Magnitude.." "..(expectedDiff.Magnitude + self.Thresholds.Teleportation + self.Thresholds.TeleportationPercent/100 * expectedDiff.Magnitude)..")\n  AssemblyLinearVelocity: "..tostring(updatedVelocity).."\n  Delta: "..tostring(localDelta).."\n  IPos: "..tostring(initialPos).."\n  Pos: "..tostring(root.CFrame.p))
 
 										-- Change their position to what was expected
-										realDiff = realDiff.Unit * (expectedDiff.Magnitude + self.Thresholds.Teleportation)
+										realDiff = realDiff.Unit * (expectedDiff.Magnitude + self.Thresholds.Teleportation + self.Thresholds.TeleportationPercent/100 * expectedDiff.Magnitude)
 										flagForUpdate = true
 									end
 								end
@@ -330,12 +372,12 @@ function Anticheat:TestPlayers(PlayerManager, delta)
 									physicsData.OnGround = false
 									physicsData.LastOnGround = os.clock()
 									updateJumpSpeed = true
-									physicsData.JumpSpeed = root.Velocity.Y
+									physicsData.JumpSpeed = root.AssemblyLinearVelocity.Y
 								end
 
 								-- Flight check
 								if Anticheat.ChecksEnabled.Flight then
-									if not physicsData.OnGround and root.Velocity.Y >= 0  then
+									if not physicsData.OnGround and root.AssemblyLinearVelocity.Y >= 0  then
 										if physicsData.LastOnGround then
 											local g = workspace.Gravity / (root.AssemblyMass or root.Mass)
 											local v = physicsData.JumpSpeed or 0
@@ -352,8 +394,8 @@ function Anticheat:TestPlayers(PlayerManager, delta)
 													realDiff = results.Position - (cf.p + footDir)
 													flagForUpdate = true
 
-													root.Velocity *= Vector3.new(1, 0, 1)
-													root.Velocity -= Vector3.new(0, workspace.Gravity, 0)
+													root.AssemblyLinearVelocity *= Vector3.new(1, 0, 1)
+													root.AssemblyLinearVelocity -= Vector3.new(0, workspace.Gravity, 0)
 												end
 											end
 										end
@@ -388,15 +430,22 @@ function Anticheat:TestPlayers(PlayerManager, delta)
 							end
 						end
 
-						-- Velocity checking
+						-- AssemblyLinearVelocity checking
 						do
 							-- Get their humanoid
 							local humanoid = character:FindFirstChildOfClass("Humanoid")
 
 							local flagForUpdate = false
 							if humanoid then
-								local horizontalVelocity = root.Velocity * Vector3.new(1, 0, 1)
-								local verticalSpeed = root.Velocity.Y
+								local horizontalVelocity = root.AssemblyLinearVelocity * Vector3.new(1, 0, 1)
+								local verticalSpeed = root.AssemblyLinearVelocity.Y
+
+								-- Get memorized AssemblyLinearVelocity
+								local velocityMemory = physicsData.VelocityMemory or Vector3.new()
+								-- Get only the horizontal component
+								local memHorizontal = velocityMemory * Vector3.new(1, 0, 1)
+								-- Get only the vertical component
+								local memVertical = velocityMemory.Y
 
 								local previousVerticalSpeed = (physicsData.InitialVelocity and physicsData.InitialVelocity.Y) or 0
 
@@ -424,27 +473,27 @@ function Anticheat:TestPlayers(PlayerManager, delta)
 								local walkSpeed = humanoid.WalkSpeed
 								local jumpPower = humanoid.JumpPower
 
-								if Anticheat.ChecksEnabled.VerticalSpeeds then
-									if verticalSpeed > (jumpPower + self.Thresholds.VerticalSpeed) then
+								if Anticheat.ChecksEnabled.VerticalSpeed then
+									if verticalSpeed > (math.max(jumpPower, memVertical) + self.Thresholds.VerticalSpeed + self.Thresholds.VerticalSpeedPercent/100 * math.max(jumpPower, memVertical)) then
 										if humanoid:GetState() ~= Enum.HumanoidStateType.Freefall then
 											table.insert(reason_DEBUG, "Vert Jump ("..verticalSpeed.." sps)")
 
 											-- Jump vertical speed
-											verticalSpeed = math.min(verticalSpeed, (jumpPower + self.Thresholds.VerticalSpeed))
+											verticalSpeed = math.min(verticalSpeed, (math.max(jumpPower, memVertical) + self.Thresholds.VerticalSpeed + self.Thresholds.VerticalSpeedPercent/100 * math.max(jumpPower, memVertical)))
 											flagForUpdate = true
 										else
 											-- Non-jump vertical speed
 											if humanoid:GetState() ~= Enum.HumanoidStateType.Jumping then
-												if verticalSpeed > self.Thresholds.VerticalSpeedCap then
+												if verticalSpeed > memVertical + self.Thresholds.VerticalSpeedCap then
 													table.insert(reason_DEBUG, "Vert Nojump ("..verticalSpeed.." sps)")
 
-													verticalSpeed = math.min(verticalSpeed, self.Thresholds.VerticalSpeedCap)
+													verticalSpeed = math.min(verticalSpeed, memVertical + self.Thresholds.VerticalSpeedCap)
 													flagForUpdate = true
 												end
 											end
 
 											-- Vertical acceleration
-											if physicsData.Acceleration and verticalSpeed > 0 and physicsData.Acceleration.Y > previousVerticalSpeed + self.Thresholds.Acceleration then
+											if physicsData.Acceleration and verticalSpeed > 0 and physicsData.Acceleration.Y > math.max(previousVerticalSpeed, memVertical) + self.Thresholds.Acceleration then
 												table.insert(reason_DEBUG, "Vert Accel ("..tostring(physicsData.Acceleration).." sps^2)")
 
 												verticalSpeed = verticalSpeed - physicsData.Acceleration.Y + self.Thresholds.Acceleration
@@ -456,10 +505,10 @@ function Anticheat:TestPlayers(PlayerManager, delta)
 
 								-- Speed check
 								if Anticheat.ChecksEnabled.Speed then
-									if horizontalVelocity.Magnitude > (walkSpeed + self.Thresholds.Speed) then
+									if horizontalVelocity.Magnitude > (math.max(walkSpeed, memHorizontal.Magnitude) + self.Thresholds.Speed + self.Thresholds.SpeedPercent/100 * math.max(walkSpeed, memHorizontal.Magnitude)) then
 										table.insert(reason_DEBUG, "Speed ("..horizontalVelocity.Magnitude.." sps)")
 
-										horizontalVelocity = horizontalVelocity.Unit * (walkSpeed + self.Thresholds.Speed)
+										horizontalVelocity = horizontalVelocity.Unit * (walkSpeed + self.Thresholds.Speed + self.Thresholds.SpeedPercent/100 * math.max(walkSpeed, memHorizontal.Magnitude))
 										flagForUpdate = true
 									end
 								end
@@ -476,13 +525,13 @@ function Anticheat:TestPlayers(PlayerManager, delta)
 								end
 
 								if flagForUpdate then
-									root.Velocity = initialVelocity
+									root.AssemblyLinearVelocity = initialVelocity
 								end
 							end
 						end
 
 						physicsData.InitTime = os.clock()
-						physicsData.InitialVelocity = root.Velocity
+						physicsData.InitialVelocity = root.AssemblyLinearVelocity
 						physicsData.InitialCFrame = root.CFrame
 					end
 				end
