@@ -1,0 +1,13 @@
+# Temporary WIP items
+/src/PlacementLocal.client.lua
+/src/init.lua
+
+# Project file
+/StructurePlacer.rbxmx
+/StructurePlacer.rbxm
+/StructurePlacer.rbxlx
+/StructurePlacer.rbxl
+
+# Roblox Studio lock files
+/*.rbxlx.lock
+/*.rbxl.lock
