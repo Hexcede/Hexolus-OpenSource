@@ -50,7 +50,7 @@ Anticheat.ChecksEnabled = {
 	-- Non movement related checks
 	MultiTool = true, -- Equipping multiple tools at once
 	InvalidDrop = true, -- Dropping tools that don't have CanBeDropped
-	ToolDeletion = true, -- Stop the client from deleting tools (Incompatible with any usage of tool.Parent = nil, use :Destroy() instead)
+	ToolDeletion = false, -- Stop the client from deleting tools (Incompatible with any usage of tool.Parent = nil, use :Destroy() instead)
 	FEGodMode = true, -- God mod achieved by deleting their Humanoid on the server and creating a fake one on the client
 
 	-- Upcoming checks
