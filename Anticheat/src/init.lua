@@ -1,8 +1,8 @@
 --[[
 	[Hexolus Anticheat]
 	 Author: Hexcede
-	 Updated: 2/14/2020
-	  Built for game version: 1.7.1-TA
+	 Updated: 3/1/2020
+	  Built for game version: 1.7.2-TA
 	 Description:
 	   Server-only movement checking & prevention of bad Roblox behaviours
 	 Extra features:
@@ -18,10 +18,12 @@
 	   Prevent usage of body parts as nuclear warheads against other players (Make all non-connected character body parts server owned)
 --]]
 
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local PhysicsService = game:GetService("PhysicsService")
 local RunService = game:GetService("RunService")
+local StarterPlayer = game:GetService("StarterPlayer")
 
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local StarterCharacterScripts = StarterPlayer:WaitForChild("StarterCharacterScripts")
 local LocalLinker = ReplicatedStorage:FindFirstChild("LocalLinker")
 local Linker = LocalLinker and require(LocalLinker) or
 	-- Code for running outside of Hexolus' environment
@@ -41,6 +43,12 @@ local Anticheat = {}
 local DEBUG
 
 Anticheat.ChecksEnabled = {
+	-- Experimental - You may not wish to turn these on, but, I encourage you to test them out
+	Experimental__LocalCharacter = false, -- Prevents clients from deleting descendants of the character by creating a local container
+	-- Must use some custom tool sync code as well
+	-- Some replication quirks exist, so, use this at your own risk
+	-- (e.g. tools are equipped, then dequipped, then equipped again on the client due to how the replication works)
+	
 	-- Basic checks
 	Teleportation = true, -- Changing your position, or otherwise moving faster than humanly possible in a single instant
 	Speed = true, -- Zoom
@@ -57,25 +65,27 @@ Anticheat.ChecksEnabled = {
 	--ServerOwnedLimbs = true, -- Make sure limbs are server owned when detached from the player
 	--HumanoidStateValidation = true, -- Validate humanoid states and make sure things such as Swimming, Climbing, etc happen when they make sense to
 
-
 	
 	-- Unstable - DO NOT USE IN PRODUCTION
+	-- TDOO: Rewrite
 	Flight = false
 }
 
 Anticheat.Thresholds = {
-	Acceleration = 1, -- Maximum vertical acceleration above expected
-	Speed = 1, -- Maximum speed above expected
-	SpeedPercent = 5,
-	VerticalSpeed = 1.5, -- Maximum vertical speed above expected
-	VerticalSpeedPercent = 20,
-	VerticalSpeedCap = workspace.Gravity, -- Maximum vertical speed
-	Teleportation = 1.2, -- Maximum teleport distance
-	TeleportationPercent = 25,
-	VerticalTeleportation = 2.2, -- Maximum teleport distance (vertical)
-	VerticalTeleportationPercent = 40,
+	Acceleration = 0.85, -- Maximum vertical acceleration above expected
+	Speed = 0.75, -- Maximum speed above expected
+	SpeedPercent = 6.5, -- Percentage threshold (E.g. 6.5 = 6.5% faster than expected)
+	VerticalSpeed = 1.35, -- Maximum vertical speed above expected
+	VerticalSpeedPercent = 15, -- Percentage threshold (E.g. 15 = 15% faster than expected)
+	VerticalSpeedCap = workspace.Gravity, -- Maximum positive vertical speed
+	Teleportation = 2.65, -- Maximum teleport distance above expected
+	TeleportationPercent = 25, -- Percentage leeway (E.g. 25 = 25% further than expected)
+	VerticalTeleportation = 2.2, -- Maximum teleport distance above expected (vertical)
+	VerticalTeleportationPercent = 40, -- Percentage leeway (E.g. 40 = 40% further than expected)
+
+	-- TODO: Rewrite
 	GroundThreshold = 1, -- Distance from the ground to be considered on the ground
-	FlightTimeThreshold = 1
+	FlightTimeThreshold = 1 -- A threshold to determine how long a player can be off the ground for
 }
 
 local SMALL_DECIMAL = 1e-3
@@ -162,7 +172,7 @@ function Anticheat:TestPlayers(PlayerManager, delta)
 												-- This might interfere with server code that happens to set the humanoid's parent to nil and then somehow is effected by the humanoid actually not being there
 												-- That case is unlikely, and would suggest bad code if it causes some sort of error (But, that's what the enabled switch is for anyway)
 												pcall(function()
-													humanoid:WaitForChild("", 1e-6) -- Hacky way to yield for a very very tiny amount of time
+													humanoid:WaitForChild("\0", 1e-6) -- Hacky way to yield for a very very tiny amount of time
 													humanoid.Parent = character
 												end)
 											end
@@ -187,7 +197,7 @@ function Anticheat:TestPlayers(PlayerManager, delta)
 							trackHumanoid()
 						end
 
-						if child:IsA("Tool") then
+						if child:IsA("BackpackItem") then
 							if not stillConnected[child] then
 								local connection
 								connection = child.AncestryChanged:Connect(function(_, parent)
@@ -202,7 +212,7 @@ function Anticheat:TestPlayers(PlayerManager, delta)
 											-- If the tool can't be dropped and it wasn't dropped from the server
 											if not child.CanBeDropped then
 												-- Prevent the drop
-												child:WaitForChild("", 1e-6) -- Hacky way to yield for a very very tiny amount of time
+												child:WaitForChild("\0", 1e-6) -- Hacky way to yield for a very very tiny amount of time
 												child.Parent = character
 											end
 										end
@@ -211,7 +221,7 @@ function Anticheat:TestPlayers(PlayerManager, delta)
 											-- Stop the tool from being deleted
 											-- Will fail if done on the server via :Destroy()
 											pcall(function()
-												child:WaitForChild("", 1e-6) -- Hacky way to yield for a very very tiny amount of time
+												child:WaitForChild("\0", 1e-6) -- Hacky way to yield for a very very tiny amount of time
 												child.Parent = character
 											end)
 										end
@@ -228,11 +238,11 @@ function Anticheat:TestPlayers(PlayerManager, delta)
 								-- Count the number of tools in the character
 								local toolCount = 0
 								for _, child in ipairs(character:GetChildren()) do
-									if child:IsA("Tool") then
+									if child:IsA("BackpackItem") then
 										toolCount += 1
 
 										if toolCount > 1 then
-											child:WaitForChild("", 1e-6) -- Hacky way to yield for a very very tiny amount of time
+											child:WaitForChild("\0", 1e-6) -- Hacky way to yield for a very very tiny amount of time
 											-- If we already have a tool, we want to move this one back to the player's backpack
 											-- This also avoids conflicts where a tool is given to the player by the server
 											child.Parent = player:FindFirstChildWhichIsA("Backpack") or Instance.new("Backpack", player)
@@ -376,6 +386,7 @@ function Anticheat:TestPlayers(PlayerManager, delta)
 								end
 
 								-- Flight check
+								-- TODO: Rewrite
 								if Anticheat.ChecksEnabled.Flight then
 									if not physicsData.OnGround and root.AssemblyLinearVelocity.Y >= 0  then
 										if physicsData.LastOnGround then
@@ -554,6 +565,50 @@ end
 
 function Anticheat:Start()
 	local PlayerManager = Linker:GetService("PlayerManager")
+
+	if Anticheat.ChecksEnabled.Experimental__LocalCharacter then
+		local LocalCharacterDispatch = script:WaitForChild("LocalCharacterDispatch")
+		LocalCharacterDispatch.Parent = StarterCharacterScripts
+		
+		local equipEvent = Instance.new("RemoteFunction")
+		equipEvent.Name = "Hexolus_ToolEquipEvent"
+		
+		function equipEvent:OnServerInvoke(tool, equip)
+			if typeof(tool) ~= "Instance" then
+				return
+			end
+			if not tool:IsA("BackpackItem") then
+				return
+			end
+			
+			local character = self.Character
+			if not character then
+				return
+			end
+			
+			local humanoid = character:FindFirstChildOfClass("Humanoid")
+			if not humanoid then
+				return
+			end
+			
+			local backpack = self:FindFirstChildOfClass("Backpack")
+			if not backpack then
+				return
+			end
+
+			if equip then
+				if tool.Parent == backpack then
+					tool.Parent = character
+				end
+			else
+				if tool.Parent == character then
+					tool.Parent = backpack
+				end
+			end
+		end
+		
+		equipEvent.Parent = ReplicatedStorage
+	end
 
 	-- Code for running outside of Hexolus' environment
 	if not PlayerManager then

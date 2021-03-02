@@ -3,6 +3,7 @@
 /src/init.lua
 
 # Project file
+/build.rbxm
 /StructurePlacer.rbxmx
 /StructurePlacer.rbxm
 /StructurePlacer.rbxlx

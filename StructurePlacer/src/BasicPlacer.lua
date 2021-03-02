@@ -1,6 +1,8 @@
 local CollectionService = game:GetService("CollectionService")
 local RunService = game:GetService("RunService")
 
+local Validator = require(script.Parent:WaitForChild("Validator"))
+
 local BasicPlacer = {}
 
 function BasicPlacer.new(model)
@@ -9,18 +11,33 @@ function BasicPlacer.new(model)
 	Placer.Rotation = 0
 	
 	local endEvent = Instance.new("BindableEvent")
+	local validatedEvent = Instance.new("BindableEvent")
+
 	Placer.Ended = endEvent.Event
+	Placer.Validated = validatedEvent.Event
 	Placer.Valid = false
+
+	local prevValidity
+	local function setValid(self, valid)
+		self.Valid = valid
+
+		if prevValidity ~= valid then
+			validatedEvent:Fire(valid)
+		end
+		prevValidity = valid
+
+		return valid
+	end
 	
 	local previousPosition, previousNormal, previousCenter
 	function Placer:Update(position, normal, center)
 		previousPosition, previousNormal, previousCenter = position, normal, center
-		self.Valid = true
 		
 		-- Placer animation
-		if RunService:IsClient() then
-			position += normal * -0.15
-		end
+		-- if RunService:IsClient() then
+		-- 	position += normal * -0.15
+		-- end
+		position += normal * 0.15
 		
 		local reparents = {}
 		for _, descendant in ipairs(model:GetDescendants()) do
@@ -61,13 +78,17 @@ function BasicPlacer.new(model)
 		
 		local difference = cframe:ToObjectSpace(primaryPart.CFrame)
 		workspace:BulkMoveTo({primaryPart}, {newCFrame * difference}, Enum.BulkMoveMode.FireCFrameChanged)
+
+		return setValid(self, not Validator:ModelCollides(model))
 	end
 
 	function Placer:Add(...)
-		self:Update(...)
-		if self.Valid then
+		local valid = self:Update(...)
+		warn(valid)
+		if valid then
 			self:Cancel(true)
 		end
+		return valid
 	end
 	
 	function Placer:Rotate(amount)
@@ -80,11 +101,15 @@ function BasicPlacer.new(model)
 	
 	function Placer:Cancel(didPlace)
 		if endEvent then
+			didPlace = didPlace and self.Valid
+
 			local event = endEvent
 			endEvent = nil
 			
 			event:Fire(didPlace)
 			event:Destroy()
+
+			validatedEvent:Destroy()
 		end
 	end
 	
