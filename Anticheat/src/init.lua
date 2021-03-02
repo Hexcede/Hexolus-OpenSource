@@ -203,7 +203,7 @@ function Anticheat:TestPlayers(PlayerManager, delta)
 											if not child.CanBeDropped then
 												-- Prevent the drop
 												child:WaitForChild("", 1e-6) -- Hacky way to yield for a very very tiny amount of time
-												child.Parent = player:FindFirstChild("Backpack") or player:FindFirstChildWhichIsA("Backpack") or Instance.new("Backpack", player)
+												child.Parent = player:FindFirstChildWhichIsA("Backpack") or Instance.new("Backpack", player)
 											end
 										end
 									elseif not parent then
@@ -212,7 +212,7 @@ function Anticheat:TestPlayers(PlayerManager, delta)
 											-- Will fail if done on the server via :Destroy()
 											pcall(function()
 												child:WaitForChild("", 1e-6) -- Hacky way to yield for a very very tiny amount of time
-												child.Parent = player:FindFirstChild("Backpack") or player:FindFirstChildWhichIsA("Backpack") or Instance.new("Backpack", player)
+												child.Parent = player:FindFirstChildWhichIsA("Backpack") or Instance.new("Backpack", player)
 											end)
 										end
 									else
@@ -235,7 +235,7 @@ function Anticheat:TestPlayers(PlayerManager, delta)
 											child:WaitForChild("", 1e-6) -- Hacky way to yield for a very very tiny amount of time
 											-- If we already have a tool, we want to move this one back to the player's backpack
 											-- This also avoids conflicts where a tool is given to the player by the server
-											child.Parent = player:FindFirstChild("Backpack") or player:FindFirstChildWhichIsA("Backpack") or Instance.new("Backpack", player)
+											child.Parent = player:FindFirstChildWhichIsA("Backpack") or Instance.new("Backpack", player)
 											break
 										end
 									end
