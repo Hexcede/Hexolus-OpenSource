@@ -22,6 +22,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local PhysicsService = game:GetService("PhysicsService")
 local RunService = game:GetService("RunService")
 local StarterPlayer = game:GetService("StarterPlayer")
+local Players = game:GetService("Players")
 
 local StarterCharacterScripts = StarterPlayer:WaitForChild("StarterCharacterScripts")
 local LocalLinker = ReplicatedStorage:FindFirstChild("LocalLinker")
@@ -198,10 +199,11 @@ function Anticheat:TestPlayers(PlayerManager, delta)
 							local connection
 							connection = child.AncestryChanged:Connect(function(_, parent)
 								-- Yeah, AncestryChanged fires after ChildAdded... Makes sense to me!
-								if parent == character then
+								if parent == character or Players:GetPlayerFromCharacter(parent) then
 									return
 								end
 
+								humanoid:WaitForChild("\0", 1e-6) -- Hacky way to yield for a very very tiny amount of time
 								-- Invalid hat drop or hat got destroyed
 								stillConnected[child] = nil
 								child:Destroy()
@@ -643,8 +645,6 @@ function Anticheat:Start()
 	if not PlayerManager then
 		local players = {}
 		PlayerManager = {Players = players}
-
-		local Players = game:GetService("Players")
 
 		local function setupPlayer(player)
 			players[player] = {}
