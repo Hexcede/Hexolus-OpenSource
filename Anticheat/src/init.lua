@@ -60,6 +60,7 @@ Anticheat.ChecksEnabled = {
 	InvalidDrop = true, -- Dropping tools that don't have CanBeDropped
 	ToolDeletion = true, -- Stop the client from deleting tools (Incompatible with any usage of tool.Parent = nil, use :Destroy() instead)
 	FEGodMode = true, -- God mod achieved by deleting their Humanoid on the server and creating a fake one on the client
+	CanHatsBeDropped = false, -- If players can drop hats via a hat drop script. Up to 2017 you could drop hats via the = key however this was removed. If you have a custom hat drop script set this to true.
 
 	-- Upcoming checks
 	--ServerOwnedLimbs = true, -- Make sure limbs are server owned when detached from the player
@@ -251,8 +252,46 @@ function Anticheat:TestPlayers(PlayerManager, delta)
 									end
 								end
 							end
+						elseif child:IsA("Accoutrement") and not Anticheat.ChecksEnabled.CanHatsBeDropped then
+							if not stillConnected[child] then
+								local connection
+								connection = child.AncestryChanged:Connect(function(_, parent)
+									-- Yeah, AncestryChanged fires after ChildAdded... Makes sense to me!
+									if parent == character then
+										return
+									end
+
+									-- Invalid hat drop or hat got destroyed
+									stillConnected[child] = nil
+									child:Destroy()
+									connection:Disconnect()
+									connection = nil
+								end)
+							end
 						end
 					end)
+
+					if not Anticheat.ChecksEnabled.CanHatsBeDropped then
+						for _, child in ipairs(character:GetChildren()) do
+							if child:IsA("Accoutrement") then
+								if not stillConnected[child] then
+									local connection
+									connection = child.AncestryChanged:Connect(function(_, parent)
+										-- Yeah, AncestryChanged fires after ChildAdded... Makes sense to me!
+										if parent == character then
+											return
+										end
+
+										-- Invalid hat drop or hat got destroyed
+										stillConnected[child] = nil
+										child:Destroy()
+										connection:Disconnect()
+										connection = nil
+									end)
+								end
+							end
+						end
+					end
 
 					trackHumanoid()
 
