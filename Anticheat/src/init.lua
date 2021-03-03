@@ -193,6 +193,23 @@ function Anticheat:TestPlayers(PlayerManager, delta)
 					end
 
 					local stillConnected = setmetatable({}, {__mode="kv"})
+					local function ConnectHatDrop(child)
+						if not stillConnected[child] then
+							local connection
+							connection = child.AncestryChanged:Connect(function(_, parent)
+								-- Yeah, AncestryChanged fires after ChildAdded... Makes sense to me!
+								if parent == character then
+									return
+								end
+
+								-- Invalid hat drop or hat got destroyed
+								stillConnected[child] = nil
+								child:Destroy()
+								connection:Disconnect()
+								connection = nil
+							end)
+						end
+					end
 					character.ChildAdded:Connect(function(child)
 						if child:IsA("Humanoid") then
 							trackHumanoid()
@@ -253,42 +270,14 @@ function Anticheat:TestPlayers(PlayerManager, delta)
 								end
 							end
 						elseif child:IsA("Accoutrement") and not Anticheat.ChecksEnabled.CanHatsBeDropped then
-							if not stillConnected[child] then
-								local connection
-								connection = child.AncestryChanged:Connect(function(_, parent)
-									-- Yeah, AncestryChanged fires after ChildAdded... Makes sense to me!
-									if parent == character then
-										return
-									end
-
-									-- Invalid hat drop or hat got destroyed
-									stillConnected[child] = nil
-									child:Destroy()
-									connection:Disconnect()
-									connection = nil
-								end)
-							end
+							ConnectHatDrop(child)
 						end
 					end)
 
 					if not Anticheat.ChecksEnabled.CanHatsBeDropped then
 						for _, child in ipairs(character:GetChildren()) do
 							if child:IsA("Accoutrement") then
-								if not stillConnected[child] then
-									local connection
-									connection = child.AncestryChanged:Connect(function(_, parent)
-										-- Yeah, AncestryChanged fires after ChildAdded... Makes sense to me!
-										if parent == character then
-											return
-										end
-
-										-- Invalid hat drop or hat got destroyed
-										stillConnected[child] = nil
-										child:Destroy()
-										connection:Disconnect()
-										connection = nil
-									end)
-								end
+								ConnectHatDrop(child)
 							end
 						end
 					end
