@@ -208,6 +208,7 @@ function Anticheat:TestPlayers(PlayerManager, delta)
 								connection:Disconnect()
 								connection = nil
 							end)
+							stillConnected[child] = connection
 						end
 					end
 					character.ChildAdded:Connect(function(child)
