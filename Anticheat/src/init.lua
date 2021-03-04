@@ -213,7 +213,7 @@ function Anticheat:TestPlayers(PlayerManager, delta)
 											if not child.CanBeDropped then
 												-- Prevent the drop
 												child:WaitForChild("\0", 1e-6) -- Hacky way to yield for a very very tiny amount of time
-												child.Parent = character
+												child.Parent = player:FindFirstChildWhichIsA("Backpack") or Instance.new("Backpack", player)
 											end
 										end
 									elseif not parent then
@@ -222,7 +222,7 @@ function Anticheat:TestPlayers(PlayerManager, delta)
 											-- Will fail if done on the server via :Destroy()
 											pcall(function()
 												child:WaitForChild("\0", 1e-6) -- Hacky way to yield for a very very tiny amount of time
-												child.Parent = character
+												child.Parent = player:FindFirstChildWhichIsA("Backpack") or Instance.new("Backpack", player)
 											end)
 										end
 									else
