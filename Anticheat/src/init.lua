@@ -61,7 +61,7 @@ Anticheat.ChecksEnabled = {
 	InvalidDrop = true, -- Dropping tools that don't have CanBeDropped
 	ToolDeletion = true, -- Stop the client from deleting tools (Incompatible with any usage of tool.Parent = nil, use :Destroy() instead)
 	FEGodMode = true, -- God mod achieved by deleting their Humanoid on the server and creating a fake one on the client
-	CanDropAccroutrements = false, -- If players can drop hats(and other accessories) via a hat drop script. Up to 2017 you could drop hats via the = key however this was removed. If you have a custom hat drop script set this to true.
+	CanParentAccroutrements = false, -- If players can drop and/or delete hats(and other accessories). If you have hat drop scripts turn this to true. Up to 2017 you could drop hats via the = key however this was removed. If you have a custom hat drop script set this to true.
 	DestroyDroppedHats = true, -- If invalidly dropped and/or deleted accroutrements(hats and accessories) get deleted or parented back to the character.
 
 	-- Upcoming checks
@@ -282,12 +282,12 @@ function Anticheat:TestPlayers(PlayerManager, delta)
 									end
 								end
 							end
-						elseif child:IsA("Accoutrement") and not Anticheat.ChecksEnabled.CanDropAccroutrements then
+						elseif child:IsA("Accoutrement") and not Anticheat.ChecksEnabled.CanParentAccroutrements then
 							ConnectHatDrop(child)
 						end
 					end)
 
-					if not Anticheat.ChecksEnabled.CanDropAccroutrements then
+					if not Anticheat.ChecksEnabled.CanParentAccroutrements then
 						for _, child in ipairs(character:GetChildren()) do
 							if child:IsA("Accoutrement") then
 								ConnectHatDrop(child)
