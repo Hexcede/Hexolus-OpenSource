@@ -290,7 +290,7 @@ function Anticheat:TestPlayers(PlayerManager, delta)
 						do
 							local flagForUpdate = false
 							-- Don't check them if they're server-owned
-							if root:CanSetNetworkOwnership() and root:GetNetworkOwner() ~= player then
+							if not root:CanSetNetworkOwnership() or root:GetNetworkOwner() ~= player then
 								physicsData.InitialCFrame = root.CFrame
 								physicsData.InitialVelocity = root.AssemblyLinearVelocity
 								physicsData.Acceleration = root.AssemblyLinearVelocity - (physicsData.InitialVelocity or Vector3.new())
