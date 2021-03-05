@@ -202,18 +202,12 @@ function Anticheat:TestPlayers(PlayerManager, delta)
 								-- Yeah, AncestryChanged fires after ChildAdded... Makes sense to me!
 								if parent == character or Players:GetPlayerFromCharacter(parent) then
 									return
-								elseif not character or not character:IsDescendantOf(game) then
-									stillConnected[child] = nil
-									connection:Disconnect()
-									connection = nil
-									child:Destroy() -- Character is missing or respawned. Accroutrements should exist after this so we must clear it.
-									return
 								end
 
 								child:WaitForChild("\0", 1e-6) -- Hacky way to yield for a very very tiny amount of time
 								-- Invalid hat drop or hat got destroyed
 								stillConnected[child] = nil
-								if Anticheat.ChecksEnabled.DestroyDroppedHats then
+								if Anticheat.ChecksEnabled.DestroyDroppedHats or not character or not character:IsDescendantOf(game)  then
 									child:Destroy()
 								else
 									child.Parent = character
