@@ -200,20 +200,20 @@ function Anticheat:TestPlayers(PlayerManager, delta)
 							local connection
 							connection = child.AncestryChanged:Connect(function(_, parent)
 								-- Yeah, AncestryChanged fires after ChildAdded... Makes sense to me!
-								if parent == character or Players:GetPlayerFromCharacter(parent) then
+								if child.Parent == character or Players:GetPlayerFromCharacter(child.Parent) or child.Parent:FindFirstChildOfClass("Humanoid") then -- Makes stuff like admin commands which exchange hats work.
 									return
 								end
 
 								child:WaitForChild("\0", 1e-6) -- Hacky way to yield for a very very tiny amount of time
 								-- Invalid hat drop or hat got destroyed
 								stillConnected[child] = nil
+								connection:Disconnect()
+								connection = nil
 								if Anticheat.ChecksEnabled.DestroyDroppedHats or not character or not character:IsDescendantOf(game)  then
 									child:Destroy()
 								else
 									child.Parent = character
 								end
-								connection:Disconnect()
-								connection = nil
 							end)
 							stillConnected[child] = connection
 						end
