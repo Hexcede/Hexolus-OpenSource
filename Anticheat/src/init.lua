@@ -200,7 +200,7 @@ function Anticheat:TestPlayers(PlayerManager, delta)
 							local connection
 							connection = child.AncestryChanged:Connect(function(_, parent)
 								-- Yeah, AncestryChanged fires after ChildAdded... Makes sense to me!
-								if child.Parent == character or Players:GetPlayerFromCharacter(child.Parent) or child.Parent:FindFirstChildOfClass("Humanoid") then -- Makes stuff like admin commands which exchange hats work.
+								if child.Parent == character or Players:GetPlayerFromCharacter(child.Parent) then -- Makes stuff like admin commands which exchange hats work.
 									return
 								end
 
