@@ -207,9 +207,10 @@ function Anticheat:TestPlayers(PlayerManager, delta)
 									connection:Disconnect()
 									connection = nil
 									child:Destroy() -- Character is missing or respawned. Accroutrements should exist after this so we must clear it.
+									return
 								end
 
-								humanoid:WaitForChild("\0", 1e-6) -- Hacky way to yield for a very very tiny amount of time
+								child:WaitForChild("\0", 1e-6) -- Hacky way to yield for a very very tiny amount of time
 								-- Invalid hat drop or hat got destroyed
 								stillConnected[child] = nil
 								if Anticheat.ChecksEnabled.DestroyDroppedHats then
