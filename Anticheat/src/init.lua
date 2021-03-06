@@ -62,7 +62,6 @@ Anticheat.ChecksEnabled = {
 	ToolDeletion = true, -- Stop the client from deleting tools (Incompatible with any usage of tool.Parent = nil, use :Destroy() instead)
 	FEGodMode = true, -- God mod achieved by deleting their Humanoid on the server and creating a fake one on the client
 	PreventParentAccoutrements = true, -- If players can drop and/or delete hats(and other accessories). If you have a custom hat drop scripts turn this to false. Up to 2017 you could drop hats via the = key however this was removed.
-	DestroyDroppedAccoutrements = false, -- If invalidly dropped and/or deleted accroutrements(hats and accessories) get deleted or parented back to the character.
 
 	-- Upcoming checks
 	--ServerOwnedLimbs = true, -- Make sure limbs are server owned when detached from the player
@@ -209,9 +208,7 @@ function Anticheat:TestPlayers(PlayerManager, delta)
 								stillConnected[child] = nil
 								connection:Disconnect()
 								connection = nil
-								if Anticheat.ChecksEnabled.DestroyDroppedAccoutrements or not character or not character:IsDescendantOf(game)  then
-									child:Destroy()
-								else
+								if character or character:IsDescendantOf(game) then
 									child.Parent = character
 								end
 							end)
