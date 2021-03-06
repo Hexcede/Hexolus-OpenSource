@@ -61,8 +61,8 @@ Anticheat.ChecksEnabled = {
 	InvalidDrop = true, -- Dropping tools that don't have CanBeDropped
 	ToolDeletion = true, -- Stop the client from deleting tools (Incompatible with any usage of tool.Parent = nil, use :Destroy() instead)
 	FEGodMode = true, -- God mod achieved by deleting their Humanoid on the server and creating a fake one on the client
-	PreventParentAccroutrements = true, -- If players can drop and/or delete hats(and other accessories). If you have hat drop scripts turn this to false. Up to 2017 you could drop hats via the = key however this was removed. If you have a custom hat drop script set this to false.
-	DestroyDroppedHats = true, -- If invalidly dropped and/or deleted accroutrements(hats and accessories) get deleted or parented back to the character.
+	PreventParentAccoutrements = true, -- If players can drop and/or delete hats(and other accessories). If you have a custom hat drop scripts turn this to false. Up to 2017 you could drop hats via the = key however this was removed.
+	DestroyDroppedAccoutrements = true, -- If invalidly dropped and/or deleted accroutrements(hats and accessories) get deleted or parented back to the character.
 
 	-- Upcoming checks
 	--ServerOwnedLimbs = true, -- Make sure limbs are server owned when detached from the player
@@ -195,7 +195,7 @@ function Anticheat:TestPlayers(PlayerManager, delta)
 					end
 
 					local stillConnected = setmetatable({}, {__mode="kv"})
-					local function ConnectHatDrop(child)
+					local function ConnectAccoutrementDrop(child)
 						if not stillConnected[child] then
 							local connection
 							connection = child.AncestryChanged:Connect(function(_, parent)
@@ -205,11 +205,11 @@ function Anticheat:TestPlayers(PlayerManager, delta)
 								end
 
 								child:WaitForChild("\0", 1e-6) -- Hacky way to yield for a very very tiny amount of time
-								-- Invalid hat drop or hat got destroyed
+								-- Invalid accoutrement drop or accoutrement got destroyed
 								stillConnected[child] = nil
 								connection:Disconnect()
 								connection = nil
-								if Anticheat.ChecksEnabled.DestroyDroppedHats or not character or not character:IsDescendantOf(game)  then
+								if Anticheat.ChecksEnabled.DestroyDroppedAccoutrements or not character or not character:IsDescendantOf(game)  then
 									child:Destroy()
 								else
 									child.Parent = character
@@ -277,15 +277,15 @@ function Anticheat:TestPlayers(PlayerManager, delta)
 									end
 								end
 							end
-						elseif child:IsA("Accoutrement") and Anticheat.ChecksEnabled.PreventParentAccroutrements then
-							ConnectHatDrop(child)
+						elseif child:IsA("Accoutrement") and Anticheat.ChecksEnabled.PreventParentAccoutrements then
+							ConnectAccoutrementDrop(child)
 						end
 					end)
 
-					if Anticheat.ChecksEnabled.PreventParentAccroutrements then
+					if Anticheat.ChecksEnabled.PreventParentAccoutrements then
 						for _, child in ipairs(character:GetChildren()) do
 							if child:IsA("Accoutrement") then
-								ConnectHatDrop(child)
+								ConnectAccoutrementDrop(child)
 							end
 						end
 					end
