@@ -213,7 +213,7 @@ function Anticheat:TestPlayers(PlayerManager, delta)
 											if not child.CanBeDropped then
 												-- Prevent the drop
 												child:WaitForChild("\0", 1e-6) -- Hacky way to yield for a very very tiny amount of time
-												child.Parent = character
+												child.Parent = player:FindFirstChildWhichIsA("Backpack") or Instance.new("Backpack", player)
 											end
 										end
 									elseif not parent then
@@ -222,7 +222,7 @@ function Anticheat:TestPlayers(PlayerManager, delta)
 											-- Will fail if done on the server via :Destroy()
 											pcall(function()
 												child:WaitForChild("\0", 1e-6) -- Hacky way to yield for a very very tiny amount of time
-												child.Parent = character
+												child.Parent = player:FindFirstChildWhichIsA("Backpack") or Instance.new("Backpack", player)
 											end)
 										end
 									else
@@ -290,7 +290,7 @@ function Anticheat:TestPlayers(PlayerManager, delta)
 						do
 							local flagForUpdate = false
 							-- Don't check them if they're server-owned
-							if root:CanSetNetworkOwnership() and root:GetNetworkOwner() ~= player then
+							if not root:CanSetNetworkOwnership() or root:GetNetworkOwner() ~= player then
 								physicsData.InitialCFrame = root.CFrame
 								physicsData.InitialVelocity = root.AssemblyLinearVelocity
 								physicsData.Acceleration = root.AssemblyLinearVelocity - (physicsData.InitialVelocity or Vector3.new())
