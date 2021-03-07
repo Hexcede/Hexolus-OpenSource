@@ -61,8 +61,8 @@ Anticheat.ChecksEnabled = {
 	InvalidDrop = true, -- Dropping tools that don't have CanBeDropped
 	ToolDeletion = true, -- Stop the client from deleting tools (Incompatible with any usage of tool.Parent = nil, use :Destroy() instead)
 	FEGodMode = true, -- God mod achieved by deleting their Humanoid on the server and creating a fake one on the client
-	PreventAccoutrementDrop = true, -- If players can drop and hats(and other accessories). If you have a custom hat drop scripts turn this to false. Up to 2017 you could drop hats via the = key however this was removed.
-	AccroutrementDeletion = true, -- If it prevents the deletion of accroutrements. Note you will have to have PreventParentAccoutrements on.
+	PreventAccoutrementDrop = true, -- If players can drop and hats(and other accessories). Up to 2017 you could drop hats via the = key however this was removed. If you have a custom hat drop scripts turn this to false.
+	AccroutrementDeletion = true, -- If it prevents the deletion of accoutrements.
 
 	-- Upcoming checks
 	--ServerOwnedLimbs = true, -- Make sure limbs are server owned when detached from the player
