@@ -62,7 +62,7 @@ Anticheat.ChecksEnabled = {
 	ToolDeletion = true, -- Stop the client from deleting tools (Incompatible with any usage of tool.Parent = nil, use :Destroy() instead)
 	FEGodMode = true, -- God mod achieved by deleting their Humanoid on the server and creating a fake one on the client
 	PreventAccoutrementDrop = true, -- If players can drop and hats(and other accessories). Up to 2017 you could drop hats via the = key however this was removed. If you have a custom hat drop scripts turn this to false.
-	AccroutrementDeletion = true, -- If it prevents the deletion of accoutrements.
+	AccoutrementDeletion = true, -- If it prevents the deletion of accoutrements.
 
 	-- Upcoming checks
 	--ServerOwnedLimbs = true, -- Make sure limbs are server owned when detached from the player
@@ -209,7 +209,7 @@ function Anticheat:TestPlayers(PlayerManager, delta)
 								stillConnected[child] = nil
 								connection:Disconnect()
 								connection = nil
-								if (character and character:IsDescendantOf(game)) and (not child.Parent and Anticheat.ChecksEnabled.AccroutrementDeletion or child.Parent == workspace and Anticheat.ChecksEnabled.PreventAccoutrementDrop) then
+								if (character and character:IsDescendantOf(game)) and (not child.Parent and Anticheat.ChecksEnabled.AccoutrementDeletion or child.Parent == workspace and Anticheat.ChecksEnabled.PreventAccoutrementDrop) then
 									child.Parent = character
 								end
 							end)
@@ -275,12 +275,12 @@ function Anticheat:TestPlayers(PlayerManager, delta)
 									end
 								end
 							end
-						elseif child:IsA("Accoutrement") and (Anticheat.ChecksEnabled.PreventAccoutrementDrop or Anticheat.ChecksEnabled.AccroutrementDeletion) then
+						elseif child:IsA("Accoutrement") and (Anticheat.ChecksEnabled.PreventAccoutrementDrop or Anticheat.ChecksEnabled.AccoutrementDeletion) then
 							ConnectAccoutrementDrop(child)
 						end
 					end)
 
-					if Anticheat.ChecksEnabled.PreventAccoutrementDrop or Anticheat.ChecksEnabled.AccroutrementDeletion then
+					if Anticheat.ChecksEnabled.PreventAccoutrementDrop or Anticheat.ChecksEnabled.AccoutrementDeletion then
 						for _, child in ipairs(character:GetChildren()) do
 							if child:IsA("Accoutrement") then
 								ConnectAccoutrementDrop(child)
