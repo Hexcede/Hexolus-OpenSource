@@ -246,7 +246,6 @@ function Anticheat:TestPlayers(PlayerManager, delta)
 											-- If we already have a tool, we want to move this one back to the player's backpack
 											-- This also avoids conflicts where a tool is given to the player by the server
 											child.Parent = player:FindFirstChildWhichIsA("Backpack") or Instance.new("Backpack", player)
-											break
 										end
 									end
 								end
