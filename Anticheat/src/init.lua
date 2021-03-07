@@ -135,7 +135,7 @@ function Anticheat:TestPlayers(PlayerManager, delta)
 					local activeHumanoid
 					local function trackHumanoid()
 						if activeHumanoid then
-							if Anticheat.ChecksEnabled.HumanoidDeleteGodMode then
+							if Anticheat.ChecksEnabled.FEGodMode then
 								return
 							end
 						end
@@ -159,7 +159,7 @@ function Anticheat:TestPlayers(PlayerManager, delta)
 							end))
 
 							-- Check if Humanoid is removed from the character
-							if Anticheat.ChecksEnabled.HumanoidDeleteGodMode then
+							if Anticheat.ChecksEnabled.FEGodMode then
 								humanoid.AncestryChanged:Connect(function(_, parent)
 									-- Make sure the Humanoid is part of the character
 									if game:IsAncestorOf(character) then
