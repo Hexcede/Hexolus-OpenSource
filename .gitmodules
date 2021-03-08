@@ -1,0 +1,3 @@
+[submodule "Anticheat"]
+	path = Anticheat
+	url = https://github.com/Hexcede/Hexolus-Anticheat
