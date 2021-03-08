@@ -1,1 +1,0 @@
-rojo build --output StructurePlacer.rbxm
