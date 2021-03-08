@@ -1,3 +1,9 @@
 [submodule "Anticheat"]
 	path = Anticheat
 	url = https://github.com/Hexcede/Hexolus-Anticheat
+[submodule "StructurePlacer"]
+	path = StructurePlacer
+	url = https://github.com/Hexcede/Hexolus-StructurePlacer
+[submodule "EntityService"]
+	path = EntityService
+	url = https://github.com/Hexcede/Hexolus-EntityService
